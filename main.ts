@@ -53,43 +53,37 @@ export const app = defineApp({
     },
   },
 
-  installationInstructions: `To use this AWS STS app with OIDC federation:
+  installationInstructions: `To set up this AWS STS app with OIDC federation:
 
-1. **Get the Provider URL**:
-   - After installing this app, go to Debug → HTTP to see the app's endpoint URL
-   - Copy this URL - you'll need it for the AWS IAM Identity Provider
+1. **Install and configure the app first**:
+   - Install this app and configure the basic settings (Role Session Name, etc.)
+   - Leave the "AWS IAM Role ARN" field empty for now
+   - The app will show "in_progress" status with message "Now set the role ARN"
 
 2. **Create an AWS IAM Identity Provider**:
    - Go to AWS IAM Console → Identity Providers → Add provider
    - Choose "OpenID Connect"
-   - Provider URL: Paste the endpoint URL from step 1
-   - Audience: Set to the hostname from the endpoint URL (e.g., if URL is https://abc123.example.com, use "abc123.example.com")
-   - Note: Both subject and audience will be set to this hostname
+   - Provider URL: set to <copyable>\`{appEndpointUrl}\`</copyable>
+   - Audience: set to <copyable>\`{appEndpointHost}\`</copyable>
    - Thumbprint: Click "Get thumbprint" to auto-populate
 
 3. **Create or update your IAM Role**:
    - Create a new role or edit existing role
    - Choose "Web identity" as trusted entity type
    - Select the identity provider you created above
-   - Add conditions: \`"StringEquals": {"hostname:sub": "hostname", "hostname:aud": "hostname"}\` (replace both "hostname" with your actual hostname)
+   - Add conditions (if needed, should be there already): <copyable>\`"StringEquals": {"hostname:sub": "{appEndpointHost}", "hostname:aud": "{appEndpointHost}"}\`</copyable>
+   - Attach the desired permissions policies to the role
 
-4. **Configure this app**:
-   - Role ARN: The ARN of the IAM role created above
-   - Role Session Name: A descriptive name for the session
-   - Session Policy (optional): An IAM policy object to restrict permissions further. Example: \`{"Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Action": ["s3:GetObject"], "Resource": "arn:aws:s3:::my-bucket/*" }]}\`
-   - Managed Policy ARNs (optional): Array of managed policy ARNs to attach. Example: \`["arn:aws:iam::aws:policy/ReadOnlyAccess", "arn:aws:iam::123456789012:policy/MyCustomPolicy"]\`
+4. **Complete the app configuration**:
+   - Copy the ARN of the IAM role you created
+   - Return to this app and paste the Role ARN into the configuration
+   - Save the configuration - the app should now succeed and start providing credentials
 
 5. **Use the credentials**:
    - The app will expose AWS credentials as signals that other entities can consume
    - Credentials are automatically refreshed before expiration`,
 
   config: {
-    roleArn: {
-      name: "AWS IAM Role ARN",
-      description: "ARN of the IAM role to assume",
-      type: "string",
-      required: true,
-    },
     roleSessionName: {
       name: "Role Session Name",
       description: "Name for the assumed role session",
@@ -124,6 +118,13 @@ export const app = defineApp({
       type: ["string"],
       required: false,
     },
+    roleArn: {
+      name: "AWS IAM Role ARN (initially empty)",
+      description:
+        "ARN of the IAM role to assume. Leave empty initially - you'll fill this after creating the OIDC provider and role in AWS.",
+      type: "string",
+      required: false,
+    },
   },
 
   async onSync(input: AppInput): Promise<AppLifecycleCallbackOutput> {
@@ -131,13 +132,6 @@ export const app = defineApp({
       const config = input.app.config;
 
       // Validate required config
-      if (!config.roleArn) {
-        return {
-          newStatus: "failed",
-          customStatusDescription: "Missing required Role ARN",
-        };
-      }
-
       if (!config.roleSessionName) {
         return {
           newStatus: "failed",
@@ -147,6 +141,13 @@ export const app = defineApp({
 
       // Check if we need to generate keys
       await ensureKeyPair();
+
+      if (!config.roleArn) {
+        return {
+          newStatus: "in_progress",
+          customStatusDescription: "Now set the role ARN",
+        };
+      }
 
       // Check if credentials need refresh
       const needsRefresh = await shouldRefreshCredentials(config);
