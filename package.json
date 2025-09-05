@@ -1,9 +1,10 @@
 {
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-sts": "^3.835.0",
     "@slflows/sdk": "^0.0.8",
-    "typescript": "^5.8.3",
-    "@aws-sdk/client-sts": "^3.835.0"
+    "fast-xml-parser": "^5.2.5",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.7",

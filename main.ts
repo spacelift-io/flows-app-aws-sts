@@ -7,6 +7,7 @@ import {
   AppLifecycleCallbackOutput,
   AppOnHTTPRequestInput,
 } from "@slflows/sdk/v1";
+import { blocks } from "./blocks";
 import {
   STSClient,
   AssumeRoleWithWebIdentityCommand,
@@ -80,8 +81,9 @@ export const app = defineApp({
    - Save the configuration - the app should now succeed and start providing credentials
 
 5. **Use the credentials**:
-   - The app will expose AWS credentials as signals that other entities can consume
-   - Credentials are automatically refreshed before expiration`,
+   - The app exposes AWS credentials as signals that other entities can consume
+   - Credentials are automatically refreshed before expiration
+   - Use the built-in HTTP Request block to make authenticated AWS API calls`,
 
   config: {
     roleSessionName: {
@@ -250,7 +252,7 @@ export const app = defineApp({
     },
   },
 
-  blocks: {},
+  blocks,
 });
 
 // Helper Functions

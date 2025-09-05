@@ -19,6 +19,7 @@ This app eliminates the need for static AWS access keys by:
 - **Standards Compliant**: Full OIDC provider implementation
 - **Built-in HTTP Server**: Serves OIDC discovery and JWKS endpoints
 - **Signal Integration**: Exposes credentials as consumable signals
+- **AWS API HTTP Block**: Built-in block for making authenticated AWS API requests
 
 ## Architecture
 
@@ -90,6 +91,91 @@ The app exposes the following signals that other apps can consume:
 - `secretAccessKey`: AWS Secret Access Key (sensitive string)
 - `sessionToken`: AWS Session Token (sensitive string)
 - `expiresAt`: Expiration timestamp in milliseconds (number)
+
+## Using the HTTP Request Block
+
+This app includes a built-in **HTTP Request** block that allows you to make authenticated requests to any AWS API using the automatically managed credentials.
+
+### Block Features
+
+- **Automatic Authentication**: Uses AWS Signature Version 4 signing with app credentials
+- **Service/Region Detection**: Automatically extracts service and region from AWS URLs
+- **Multiple Body Types**: Supports JSON, text, and binary (base64-encoded) request bodies
+- **Response Parsing**: Optional automatic parsing of XML or JSON responses to structured JSON format
+- **Comprehensive Response**: Returns status code, headers, body, and optional parsed JSON
+
+### Block Configuration
+
+| Parameter        | Type    | Required | Description                                                                  |
+| ---------------- | ------- | -------- | ---------------------------------------------------------------------------- |
+| `url`            | string  | ✅       | Complete AWS API URL (e.g., `https://dynamodb.us-east-1.amazonaws.com/`)     |
+| `method`         | enum    | ❌       | HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS) - defaults to GET |
+| `body`           | string  | ❌       | Request body content (for POST, PUT, PATCH methods)                          |
+| `bodyType`       | enum    | ❌       | Body type: `json`, `text`, or `binary` - defaults to json                    |
+| `headers`        | object  | ❌       | Additional HTTP headers as JSON object                                       |
+| `parseXmlToJson` | boolean | ❌       | Parse XML or JSON responses to structured JSON - defaults to false           |
+
+### Supported AWS URL Formats
+
+The block automatically detects service and region from various AWS hostname patterns:
+
+- `service.region.amazonaws.com` (standard format)
+- `service.amazonaws.com` (global services like IAM)
+- `s3-region.amazonaws.com` (S3 variations)
+- `service-region.amazonaws.com` (some services)
+
+### Example Usage
+
+#### DynamoDB Query
+
+```json
+{
+  "url": "https://dynamodb.us-east-1.amazonaws.com/",
+  "method": "POST",
+  "headers": {
+    "X-Amz-Target": "DynamoDB_20120810.Query"
+  },
+  "body": "{\"TableName\": \"MyTable\", \"Key\": {\"id\": {\"S\": \"123\"}}}",
+  "bodyType": "json"
+}
+```
+
+#### S3 Object Upload
+
+```json
+{
+  "url": "https://my-bucket.s3.us-west-2.amazonaws.com/myfile.txt",
+  "method": "PUT",
+  "body": "Hello World!",
+  "bodyType": "text",
+  "headers": {
+    "Content-Type": "text/plain"
+  }
+}
+```
+
+#### Lambda Function Invocation
+
+```json
+{
+  "url": "https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/my-function/invocations",
+  "method": "POST",
+  "body": "{\"name\": \"Claude\"}",
+  "bodyType": "json"
+}
+```
+
+#### S3 List Objects with Response Parsing
+
+```json
+{
+  "url": "https://my-bucket.s3.us-west-2.amazonaws.com/",
+  "method": "GET",
+  "parseXmlToJson": true
+}
+```
+
+When `parseXmlToJson` is enabled, the response will include both the original response in the `body` field and the parsed structured data in a `json` field. This works for both XML responses (converted to JSON) and native JSON responses, making it easier to work with AWS API responses in your flows.
 
 ## Configuration Options
 
