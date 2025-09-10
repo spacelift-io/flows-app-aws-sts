@@ -56,10 +56,11 @@ export const app = defineApp({
 
   installationInstructions: `To set up this AWS STS app with OIDC federation:
 
-1. **Install and configure the app first**:
-   - Install this app and configure the basic settings (Role Session Name, etc.)
+1. **Configure the installation first**:
    - Leave the "AWS IAM Role ARN" field empty for now
-   - The app will show "in_progress" status with message "Now set the role ARN"
+   - Fill out the rest of the settings (Role Session Name, etc.)
+   - **Confirm the installation!**
+   - The installation will show "In progress" status with message "Now set the role ARN"
 
 2. **Create an AWS IAM Identity Provider**:
    - Go to AWS IAM Console → Identity Providers → Add provider
@@ -75,13 +76,13 @@ export const app = defineApp({
    - Add conditions (if needed, should be there already): <copyable>\`"StringEquals": {"hostname:sub": "{appEndpointHost}", "hostname:aud": "{appEndpointHost}"}\`</copyable>
    - Attach the desired permissions policies to the role
 
-4. **Complete the app configuration**:
+4. **Complete the installation configuration**:
    - Copy the ARN of the IAM role you created
-   - Return to this app and paste the Role ARN into the configuration
-   - Save the configuration - the app should now succeed and start providing credentials
+   - Return to this installation and paste the Role ARN into the configuration
+   - Save the configuration - the installation should now succeed and start providing credentials
 
 5. **Use the credentials**:
-   - The app exposes AWS credentials as signals that other entities can consume
+   - The installation exposes AWS credentials as signals that other installations can consume
    - Credentials are automatically refreshed before expiration
    - Use the built-in HTTP Request block to make authenticated AWS API calls`,
 
